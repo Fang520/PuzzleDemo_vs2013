@@ -107,7 +107,7 @@ BOOL CPuzzleDemoDlg::OnInitDialog()
 	pWnd->GetWindowRect(&rect);
 	pWnd->DestroyWindow();
 	this->ScreenToClient(&rect);
-	m_Puzzle.CreateEx(WS_EX_CLIENTEDGE | WS_EX_DLGMODALFRAME, NULL, NULL, WS_CHILD | WS_VISIBLE, rect, this, 0, NULL);
+	m_Puzzle.CreateEx(WS_EX_CLIENTEDGE, NULL, NULL, WS_CHILD | WS_VISIBLE, rect, this, 0, NULL);
 
 	CButton radio;
 	radio.Attach(GetDlgItem(IDC_LEVEL1)->m_hWnd);

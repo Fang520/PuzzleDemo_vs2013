@@ -74,17 +74,16 @@ void CPuzzle::DrawPuzzle(CDC *pDC)
 		int col = i % m_Level;
 		int row = i / m_Level;
 		CRect rc;
-		rc.left = cw * col;
-		rc.top = ch * row;
+		rc.left = cw * col + 1;
+		rc.top = ch * row + 1;
 		rc.right = rc.left + cw;
 		rc.bottom = rc.top + ch;
-		rc.DeflateRect(1, 1);
+		//rc.DeflateRect(1, 1);
 		if (m_NumberList[i] != m_Level*m_Level)
 		{
 			CString title;
 			title.Format(_T("%d"), m_NumberList[i]);
-			CBrush tmp_brush(RGB(255, 255, 255));
-			pDC->FillRect(rc, &tmp_brush);
+			pDC->DrawFrameControl(&rc, DFC_BUTTON, DFCS_BUTTONPUSH);
 			pDC->SetTextColor(RGB(0, 0, 0));
 			pDC->SetBkMode(TRANSPARENT);
 			pDC->DrawText(title, rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
