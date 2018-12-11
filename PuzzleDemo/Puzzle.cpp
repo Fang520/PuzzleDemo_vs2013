@@ -132,10 +132,13 @@ void CPuzzle::AutoLayout()
 	for (int i = 0; i < layouts.size(); i++)
 	{
 		std::vector<char> layout = layouts[i];
+		printf("%d: ", i);
 		for (int j = 0; j < layout.size(); j++)
 		{
-			m_NumberList[i] = layout[i];
+			m_NumberList[j] = layout[j];
+			printf("%d ", m_NumberList[j]);
 		}
+		printf("\n");
 		Invalidate();
 		long ts = GetTickCount();
 		while (GetTickCount() - ts < 1000)

@@ -98,7 +98,7 @@ vector<vector<char>> CAutoLayout::LayoutBFS()
 	int open_list_pos = 0;
 
 	CloseNode::data_len = m_LayoutLen;
-	//close_list.rehash(218357);
+	close_list.rehash(218357);
 
 	OpenNode* first = (OpenNode*)malloc(sizeof(OpenNode));
 	first->data = (char*)malloc(m_LayoutLen);
