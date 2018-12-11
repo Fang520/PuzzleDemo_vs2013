@@ -90,12 +90,12 @@ CAutoLayout::~CAutoLayout()
 	free(m_TargetLayout);
 }
 
-vector<vector<char>> CAutoLayout::LayoutBFS()
+list<vector<char>> CAutoLayout::LayoutBFS()
 {
-	vector<vector<char>> path_list;
+	list<vector<char>> path_list;
 	vector<OpenNode*> open_list;
 	unordered_map<CloseNode, char, HashFun> close_list;
-	int open_list_pos = 0;
+	unsigned int open_list_pos = 0;
 
 	CloseNode::data_len = m_LayoutLen;
 	close_list.rehash(218357);
@@ -124,11 +124,10 @@ vector<vector<char>> CAutoLayout::LayoutBFS()
 					item.push_back(p[i]);
 					printf("%d ", p[i]);
 				}
-				path_list.push_back(item);
+				path_list.push_front(item);
 				printf("\n");
 				node = node->parent;
 			}
-			reverse(path_list.begin(), path_list.end());
 			break;
 		}
 
@@ -151,7 +150,7 @@ vector<vector<char>> CAutoLayout::LayoutBFS()
 		}
 	}
 
-	for (int i = 0; i < open_list.size(); i++)
+	for (unsigned int i = 0; i < open_list.size(); i++)
 	{
 		OpenNode* node = open_list[i];
 		free(node->data);

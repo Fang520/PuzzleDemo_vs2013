@@ -31,6 +31,7 @@ CPuzzle::~CPuzzle()
 BEGIN_MESSAGE_MAP(CPuzzle, CWnd)
 	ON_WM_PAINT()
 	ON_WM_LBUTTONDOWN()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -121,41 +122,17 @@ void CPuzzle::AutoLayout()
 {
 	CAutoLayout al(m_NumberList, m_Level * m_Level);
 	BeginWaitCursor();
-	std::vector<std::vector<char>> layouts = al.LayoutBFS();
+	m_Steps = al.LayoutBFS();
 	EndWaitCursor();
-	if (layouts.size() == 0)
+	if (m_Steps.size() != 0)
+	{
+		printf("set timer\n");
+		SetTimer(0, 1000, NULL);
+	}
+	else
 	{
 		MessageBox(_T("There is no solution !"));
-		return;
 	}
-
-	for (int i = 0; i < layouts.size(); i++)
-	{
-		std::vector<char> layout = layouts[i];
-		printf("%d: ", i);
-		for (int j = 0; j < layout.size(); j++)
-		{
-			m_NumberList[j] = layout[j];
-			printf("%d ", m_NumberList[j]);
-		}
-		printf("\n");
-		Invalidate();
-		long ts = GetTickCount();
-		while (GetTickCount() - ts < 1000)
-		{
-			MSG msg;
-			if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-			{
-				if (msg.message == WM_QUIT)
-				{
-					return;
-				}
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
-		}
-	}
-	MessageBox(_T("Finished"));
 }
 
 void CPuzzle::MoveCell(CPoint point)
@@ -223,4 +200,23 @@ void CPuzzle::SetLevel(int level)
 		free(m_NumberList);
 	}
 	m_NumberList = (char*)malloc(level * level * sizeof(char));
+}
+
+
+void CPuzzle::OnTimer(UINT_PTR nIDEvent)
+{
+	printf("on timer, size=%d\n", m_Steps.size());
+	std::vector<char> item = m_Steps.front();
+	for (unsigned int i = 0; i < item.size(); i++)
+	{
+		m_NumberList[i] = item[i];
+	}
+	m_Steps.pop_front();
+	if (m_Steps.empty())
+	{
+		printf("kill timer\n");
+		KillTimer(nIDEvent);
+	}
+	Invalidate();
+	CWnd::OnTimer(nIDEvent);
 }

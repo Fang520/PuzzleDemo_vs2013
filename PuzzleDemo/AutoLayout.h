@@ -9,12 +9,13 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#include <list>
 #include <vector>
 
 class CAutoLayout
 {
 public:
-	std::vector<std::vector<char>> LayoutBFS();
+	std::list<std::vector<char>> LayoutBFS();
 	CAutoLayout(const char* layout, int len);
 	virtual ~CAutoLayout();
 private:

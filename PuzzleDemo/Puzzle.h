@@ -1,5 +1,6 @@
 #pragma once
-
+#include <list>
+#include <vector>
 
 // CPuzzle
 
@@ -13,15 +14,15 @@ public:
 	void SetLevel(int level);
 	void AutoLayout();
 	void Reset();
-
-protected:
-	DECLARE_MESSAGE_MAP()
-public:
 	afx_msg void OnPaint();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+protected:
+	DECLARE_MESSAGE_MAP()
 private:
 	char* m_NumberList;
 	int m_Level;
+	std::list<std::vector<char>> m_Steps;
 	void CheckFinish();
 	void DrawPuzzle(CDC* pDC);
 	void MoveCell(CPoint point);
