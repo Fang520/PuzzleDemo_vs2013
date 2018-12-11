@@ -20,7 +20,7 @@ public:
 	afx_msg void OnPaint();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 private:
-	int* m_NumberList;
+	char* m_NumberList;
 	int m_Level;
 	void CheckFinish();
 	void DrawPuzzle(CDC* pDC);

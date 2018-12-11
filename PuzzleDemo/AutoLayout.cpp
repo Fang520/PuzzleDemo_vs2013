@@ -5,7 +5,7 @@
 #include "stdafx.h"
 #include <math.h>
 #include "AutoLayout.h"
-#include "LayoutLinkNode.h"
+#include <unordered_map>
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -13,135 +13,165 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
+using namespace std;
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CAutoLayout::CAutoLayout(const int *layout, int len)
+struct OpenNode
 {
-	m_OriginalLayout = LayoutArrayToString(layout, len);
-	CString tmp = _T("");
-	for (int i=1; i<=len; i++)
+	char* data;
+	OpenNode* parent;
+};
+
+class CloseNode
+{
+public:
+	static int data_len;
+	CloseNode(const char* data);
+	bool operator==(const CloseNode& other) const;
+	size_t hash() const;
+private:
+	const char* data;
+};
+
+int CloseNode::data_len = 0;
+
+CloseNode::CloseNode(const char* data)
+{
+	this->data = data;
+}
+
+bool CloseNode::operator == (const CloseNode& other) const
+{
+	if (memcmp(data, other.data, data_len) == 0)
 	{
-		tmp.Format(_T("%d "), i);
-		m_TargetLayout += tmp;
+		return true;
 	}
+	return false;
+}
+
+size_t CloseNode::hash() const
+{
+	unsigned int seed = 131; // 31 131 1313 13131 131313 etc..
+	unsigned int hash_code = 0;
+	for (int i = 0; i < data_len; i++)
+	{
+		hash_code = hash_code * seed + data[i];
+	}
+	return (hash_code & 0x7FFFFFFF);
+}
+
+struct HashFun
+{
+	size_t operator()(const CloseNode& obj) const
+	{
+		return obj.hash();
+	}
+};
+
+CAutoLayout::CAutoLayout(const char *layout, int len)
+{
 	m_LayoutLen = len;
-	m_Level = (int)sqrt((float)len);
-	m_CloseLayouts.InitHashTable(218357);
+	m_Level = (int)sqrt(len);
+	m_OriginalLayout = (char*)malloc(len);
+	memcpy(m_OriginalLayout, layout, len);
+	m_TargetLayout = (char*)malloc(len);
+	for (int i = 0; i < len; i++)
+	{
+		m_TargetLayout[i] = i + 1;
+	}
 }
 
 CAutoLayout::~CAutoLayout()
 {
-
+	free(m_OriginalLayout);
+	free(m_TargetLayout);
 }
 
-CStringList* CAutoLayout::LayoutBFS()
+vector<vector<char>> CAutoLayout::LayoutBFS()
 {
-	CStringList* result = NULL;
-	CPtrList free_layouts;
-	CPtrList open_layouts;
-	CLayoutLinkNode* node = new CLayoutLinkNode(m_OriginalLayout, NULL); // vc6 don't raise exception if new fail
-	open_layouts.AddHead(node);
-	while (open_layouts.GetCount() > 0)
+	vector<vector<char>> path_list;
+	vector<OpenNode*> open_list;
+	unordered_map<CloseNode, char, HashFun> close_list;
+	int open_list_pos = 0;
+
+	CloseNode::data_len = m_LayoutLen;
+	//close_list.rehash(218357);
+
+	OpenNode* first = (OpenNode*)malloc(sizeof(OpenNode));
+	first->data = (char*)malloc(m_LayoutLen);
+	memcpy(first->data, m_OriginalLayout, m_LayoutLen);
+	first->parent = NULL;
+	open_list.push_back(first);
+
+	while (open_list_pos < open_list.size())
 	{
-		CLayoutLinkNode* node = (CLayoutLinkNode*)open_layouts.RemoveHead();
-		free_layouts.AddTail(node);//为了释放, 这里必须保存node
-		CString layout = node->GetLayout();
+		OpenNode* open_node = open_list[open_list_pos++];
+		close_list[CloseNode(open_node->data)] = 1;
 
-		if (CheckClosed(layout))
+		if (memcmp(open_node->data, m_TargetLayout, m_LayoutLen) == 0)
 		{
-			continue;
-		}
-
-		if (CheckFinish(layout))
-		{
-			result = node->GetPath();
+			printf("Got it\n");
+			OpenNode* node = open_node;
+			while (node)
+			{
+				char* p = node->data;
+				vector<char> item;
+				for (int i = 0; i < m_LayoutLen; i++)
+				{
+					item.push_back(p[i]);
+					printf("%d ", p[i]);
+				}
+				path_list.push_back(item);
+				printf("\n");
+				node = node->parent;
+			}
+			reverse(path_list.begin(), path_list.end());
 			break;
 		}
 
-		CStringList* nexts = GetNextLayouts(layout);
-		POSITION pos;
-		pos = nexts->GetHeadPosition();
-		while (pos != NULL)
+		char* nexts[4];
+		int next_count = GetNextLayouts(open_node->data, nexts);
+		for (int i = 0; i < next_count; i++)
 		{
-			CString new_layout = nexts->GetNext(pos);
-			CLayoutLinkNode* new_node = new CLayoutLinkNode(new_layout, node);
-			open_layouts.AddTail(new_node);
+			char* new_data = nexts[i];
+			if (close_list.count(CloseNode(new_data)) == 0)
+			{
+				OpenNode* new_open_node = (OpenNode*)malloc(sizeof(OpenNode));
+				new_open_node->data = new_data;
+				new_open_node->parent = open_node;
+				open_list.push_back(new_open_node);
+			}
+			else
+			{
+				free(new_data);
+			}
 		}
-		delete nexts;
-
-		m_CloseLayouts.SetAt(layout, NULL);
 	}
 
-	if (!free_layouts.IsEmpty())
+	for (int i = 0; i < open_list.size(); i++)
 	{
-		POSITION pos = free_layouts.GetHeadPosition();
-		while (pos != NULL)
-		{
-			CLayoutLinkNode* node = (CLayoutLinkNode*)free_layouts.GetNext(pos);
-			delete node;
-		}
+		OpenNode* node = open_list[i];
+		free(node->data);
+		free(node);
 	}
 
-	if (!open_layouts.IsEmpty())
-	{
-		POSITION pos = open_layouts.GetHeadPosition();
-		while (pos != NULL)
-		{
-			CLayoutLinkNode* node = (CLayoutLinkNode*)open_layouts.GetNext(pos);
-			delete node;
-		}
-	}
-
-	return result;
+	return path_list;
 }
 
-int* CAutoLayout::LayoutStringToArray(const CString& layout)
+int CAutoLayout::GetNextLayouts(const char* data, char* new_data_list[4])
 {
-	static int result[256];
-	int start = 0;
-	int end = 0;
-	int i = 0;
-	while (end != -1)
+	int i, j, index;
+	for (i = 0; i<m_LayoutLen; i++)
 	{
-		end = layout.Find(' ', start);
-		if (end != -1)
+		if (m_LayoutLen == data[i])
 		{
-			CString s = layout.Mid(start, end - start);
-			start = end + 1;
-			result[i] = _wtoi(s);
-			i++;
+			index = i;
+			break;
 		}
 	}
-	return result;
-}
-
-CString CAutoLayout::LayoutArrayToString(const int* layout, int len)
-{
-	CString result = _T("");
-	CString tmp = _T("");
-	for (int i=0; i<len; i++)
-	{
-		tmp.Format(_T("%d "), layout[i]);
-		result += tmp;
-	}
-	return result;
-}
-
-CStringList* CAutoLayout::GetNextLayouts(const CString& layout)
-{
-	int i, j;
-	int* data = LayoutStringToArray(layout);
-	int index = -1;
-    for (i=0 ; i<m_LayoutLen; i++)
-    {
-        if (m_LayoutLen == data[i])
-        {
-            index = i;
-            break;
-        }
-    }
 
 	int near_index[4];
 	near_index[0] = index - m_Level;
@@ -152,42 +182,38 @@ CStringList* CAutoLayout::GetNextLayouts(const CString& layout)
 		near_index[2] = -1;
 	if (near_index[3] / m_Level != index / m_Level)
 		near_index[3] = -1;
-    
-	int new_data[256];
-	CStringList* result = new CStringList;
-    for (i=0; i<4; i++)
-    {
+
+	int new_data_index = 0;
+	for (i = 0; i<4; i++)
+	{
 		int probe_index = near_index[i];
-		if (probe_index >=0 && probe_index < m_LayoutLen)
+		if (probe_index >= 0 && probe_index < m_LayoutLen)
 		{
-            for (j=0; j<m_LayoutLen; j++)
-            {
-                new_data[j] = data[j];
-            }
-            new_data[probe_index] = data[index];
-            new_data[index] = data[probe_index];
-			CString new_layout = LayoutArrayToString(new_data, m_LayoutLen);
-			result->AddTail(new_layout);
+			char* new_data = (char*)malloc(m_LayoutLen);
+			for (j = 0; j<m_LayoutLen; j++)
+			{
+				new_data[j] = data[j];
+			}
+			new_data[probe_index] = data[index];
+			new_data[index] = data[probe_index];
+			new_data_list[new_data_index] = new_data;
+			new_data_index++;
 		}
-    }
-	return result;
+	}
+	return new_data_index;
 }
 
-bool CAutoLayout::CheckFinish(const CString &layout)
-{
-	if (m_TargetLayout == layout)
-	{
-		return true;
-	}
-	return false;
-}
 
-bool CAutoLayout::CheckClosed(const CString &layout)
+void CAutoLayout::PrintLayout(const char* data)
 {
-	void* value;
-	if (m_CloseLayouts.Lookup(layout, value))
+	for (int i = 0; i < m_Level; i++)
 	{
-		return true;
+		printf("    ");
+		for (int j = 0; j < m_Level; j++)
+		{
+			printf("%d ", data[i * m_Level + j]);
+		}
+		printf("\n");
 	}
-	return false;
+	printf("\n");
 }

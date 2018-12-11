@@ -6,7 +6,6 @@
 #include "Puzzle.h"
 #include "AutoLayout.h"
 
-
 // CPuzzle
 
 IMPLEMENT_DYNAMIC(CPuzzle, CWnd)
@@ -122,43 +121,38 @@ void CPuzzle::AutoLayout()
 {
 	CAutoLayout al(m_NumberList, m_Level * m_Level);
 	BeginWaitCursor();
-	CStringList* layouts = al.LayoutBFS();
+	std::vector<std::vector<char>> layouts = al.LayoutBFS();
 	EndWaitCursor();
-	if (layouts != NULL)
-	{
-		POSITION pos = layouts->GetTailPosition();
-		while (pos != NULL)
-		{
-			CString layout = layouts->GetPrev(pos);
-			int* number_list = al.LayoutStringToArray(layout);
-			for (int i = 0; i<m_Level*m_Level; i++)
-			{
-				m_NumberList[i] = number_list[i];
-			}
-			Invalidate();
-			long ts = GetTickCount();
-			while (GetTickCount() - ts < 1000)
-			{
-				MSG msg;
-				if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-				{
-					if (msg.message == WM_QUIT)
-					{
-						delete layouts;
-						return;
-					}
-					TranslateMessage(&msg);
-					DispatchMessage(&msg);
-				}
-			}
-		}
-		delete layouts;
-		MessageBox(_T("Finished"));
-	}
-	else
+	if (layouts.size() == 0)
 	{
 		MessageBox(_T("There is no solution !"));
+		return;
 	}
+
+	for (int i = 0; i < layouts.size(); i++)
+	{
+		std::vector<char> layout = layouts[i];
+		for (int j = 0; j < layout.size(); j++)
+		{
+			m_NumberList[i] = layout[i];
+		}
+		Invalidate();
+		long ts = GetTickCount();
+		while (GetTickCount() - ts < 1000)
+		{
+			MSG msg;
+			if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+			{
+				if (msg.message == WM_QUIT)
+				{
+					return;
+				}
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+	}
+	MessageBox(_T("Finished"));
 }
 
 void CPuzzle::MoveCell(CPoint point)
@@ -225,5 +219,5 @@ void CPuzzle::SetLevel(int level)
 	{
 		free(m_NumberList);
 	}
-	m_NumberList = (int*)malloc(level * level * sizeof(int));
+	m_NumberList = (char*)malloc(level * level * sizeof(char));
 }

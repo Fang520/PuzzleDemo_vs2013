@@ -100,7 +100,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AutoLayout.h" />
-    <ClInclude Include="LayoutLinkNode.h" />
     <ClInclude Include="Puzzle.h" />
     <ClInclude Include="PuzzleDemo.h" />
     <ClInclude Include="PuzzleDemoDlg.h" />
@@ -110,7 +109,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AutoLayout.cpp" />
-    <ClCompile Include="LayoutLinkNode.cpp" />
     <ClCompile Include="Puzzle.cpp" />
     <ClCompile Include="PuzzleDemo.cpp" />
     <ClCompile Include="PuzzleDemoDlg.cpp" />

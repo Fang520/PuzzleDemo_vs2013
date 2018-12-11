@@ -9,22 +9,19 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-class CAutoLayout  
+#include <vector>
+
+class CAutoLayout
 {
 public:
-	int* LayoutStringToArray(const CString& layout);
-	CString LayoutArrayToString(const int* layout, int len);
-	CStringList* LayoutBFS();
-	CAutoLayout(const int *layout, int len);
+	std::vector<std::vector<char>> LayoutBFS();
+	CAutoLayout(const char* layout, int len);
 	virtual ~CAutoLayout();
-
 private:
-	bool CheckClosed(const CString& layout);
-	bool CheckFinish(const CString& layout);
-	CStringList* GetNextLayouts(const CString& layout);
-	CMapStringToPtr m_CloseLayouts;
-	CString m_OriginalLayout;
-	CString m_TargetLayout;
+	int GetNextLayouts(const char* data, char* new_data_list[4]);
+	void PrintLayout(const char* data);
+	char* m_OriginalLayout;
+	char* m_TargetLayout;
 	int m_LayoutLen;
 	int m_Level;
 };
