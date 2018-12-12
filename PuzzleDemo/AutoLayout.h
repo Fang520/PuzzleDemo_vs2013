@@ -16,6 +16,7 @@ class CAutoLayout
 {
 public:
 	std::list<std::vector<char>> LayoutBFS();
+	std::list<std::vector<char>> LayoutAStar();
 	CAutoLayout(const char* layout, int len);
 	virtual ~CAutoLayout();
 private:

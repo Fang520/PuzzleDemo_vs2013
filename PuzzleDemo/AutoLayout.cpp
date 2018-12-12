@@ -106,6 +106,8 @@ list<vector<char>> CAutoLayout::LayoutBFS()
 	first->parent = NULL;
 	open_list.push_back(first);
 
+	unsigned int begin = GetTickCount();
+
 	while (open_list_pos < open_list.size())
 	{
 		OpenNode* open_node = open_list[open_list_pos++];
@@ -150,6 +152,10 @@ list<vector<char>> CAutoLayout::LayoutBFS()
 		}
 	}
 
+	unsigned int end = GetTickCount();
+
+	printf("visited: %d\tall: %d\ttime: %d\n", open_list_pos, open_list.size(), end - begin);
+
 	for (unsigned int i = 0; i < open_list.size(); i++)
 	{
 		OpenNode* node = open_list[i];
@@ -158,6 +164,11 @@ list<vector<char>> CAutoLayout::LayoutBFS()
 	}
 
 	return path_list;
+}
+
+list<vector<char>> CAutoLayout::LayoutAStar()
+{
+	return list<vector<char>>();
 }
 
 int CAutoLayout::GetNextLayouts(const char* data, char* new_data_list[4])
