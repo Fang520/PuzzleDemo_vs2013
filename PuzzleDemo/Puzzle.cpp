@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include "PuzzleDemo.h"
 #include "Puzzle.h"
-#include "AutoLayout.h"
+#include "AutoLayoutAStar.h"
 
 // CPuzzle
 
@@ -131,7 +131,7 @@ void CPuzzle::Reset()
 
 void CPuzzle::AutoLayout()
 {
-	CAutoLayout al(m_NumberList, m_Level * m_Level);
+	CAutoLayoutAStar al(m_NumberList, m_Level * m_Level);
 	BeginWaitCursor();
 	m_Steps = al.LayoutBFS();
 	EndWaitCursor();

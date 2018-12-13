@@ -1,28 +1,73 @@
-// AutoLayout.cpp: implementation of the CAutoLayout class.
-//
-//////////////////////////////////////////////////////////////////////
-
 #include "stdafx.h"
-#include <math.h>
-#include "AutoLayout.h"
+#include "AutoLayoutAStar.h"
 #include <unordered_map>
-
-#ifdef _DEBUG
-#undef THIS_FILE
-static char THIS_FILE[]=__FILE__;
-#define new DEBUG_NEW
-#endif
+#include <queue>
 
 using namespace std;
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
-struct OpenNode
+class OpenNode
 {
+public:
+	static int level;
+	OpenNode(char* layout, OpenNode* parent);
+	~OpenNode();
+	void CalcWeight();
 	char* data;
+	list<vector<char>> GetPath();
+	int weight;
 	OpenNode* parent;
+};
+
+int OpenNode::level = 0;
+
+OpenNode::OpenNode(char* layout, OpenNode* parent)
+{
+	int len = level * level;
+	data = new char[len];
+	memcpy(data, layout, len);
+	this->parent = parent;
+	CalcWeight();
+}
+
+OpenNode::~OpenNode()
+{
+	delete[] data;
+}
+
+void OpenNode::CalcWeight()
+{
+	OpenNode* p = this;
+	int n = 0;
+	while (p)
+	{
+		p = p->parent;
+		n++;
+	}
+	weight = n;
+}
+
+list<vector<char>> OpenNode::GetPath()
+{
+	list<vector<char>> result;
+	OpenNode* p = this;
+	int len = level * level;
+	while (p)
+	{
+		char* s = p->data;
+		vector<char> item(s, s + len);
+		result.push_front(item);
+		p = p->parent;
+	}
+	return result;
+}
+
+struct PriorityFun
+{
+	bool operator()(OpenNode *&a, OpenNode *&b) const
+	{
+		//printf("%d\n", a->weight < b->weight);
+		return a->weight < b->weight;
+	}
 };
 
 class CloseNode
@@ -71,7 +116,7 @@ struct HashFun
 	}
 };
 
-CAutoLayout::CAutoLayout(const char *layout, int len)
+CAutoLayoutAStar::CAutoLayoutAStar(const char *layout, int len)
 {
 	m_LayoutLen = len;
 	m_Level = (int)sqrt(len);
@@ -84,52 +129,37 @@ CAutoLayout::CAutoLayout(const char *layout, int len)
 	}
 }
 
-CAutoLayout::~CAutoLayout()
+CAutoLayoutAStar::~CAutoLayoutAStar()
 {
 	free(m_OriginalLayout);
 	free(m_TargetLayout);
 }
 
-list<vector<char>> CAutoLayout::LayoutBFS()
+list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 {
 	list<vector<char>> path_list;
-	vector<OpenNode*> open_list;
-	unordered_map<CloseNode, char, HashFun> close_list;
-	unsigned int open_list_pos = 0;
+	priority_queue<OpenNode*, vector<OpenNode*>, PriorityFun> open_list;
+	unordered_map<CloseNode, OpenNode*, HashFun> close_list;
 
+	OpenNode::level = m_Level;
 	CloseNode::data_len = m_LayoutLen;
 	close_list.rehash(218357);
 
-	OpenNode* first = (OpenNode*)malloc(sizeof(OpenNode));
-	first->data = (char*)malloc(m_LayoutLen);
-	memcpy(first->data, m_OriginalLayout, m_LayoutLen);
-	first->parent = NULL;
-	open_list.push_back(first);
+	OpenNode* first = new OpenNode(m_OriginalLayout, NULL);
+	open_list.push(first);
 
 	unsigned int begin = GetTickCount();
 
-	while (open_list_pos < open_list.size())
+	while (!open_list.empty())
 	{
-		OpenNode* open_node = open_list[open_list_pos++];
-		close_list[CloseNode(open_node->data)] = 1;
+		OpenNode* open_node = open_list.top();
+		close_list[CloseNode(open_node->data)] = open_node;
+		open_list.pop();
 
 		if (memcmp(open_node->data, m_TargetLayout, m_LayoutLen) == 0)
 		{
 			printf("Got it\n");
-			OpenNode* node = open_node;
-			while (node)
-			{
-				char* p = node->data;
-				vector<char> item;
-				for (int i = 0; i < m_LayoutLen; i++)
-				{
-					item.push_back(p[i]);
-					printf("%d ", p[i]);
-				}
-				path_list.push_front(item);
-				printf("\n");
-				node = node->parent;
-			}
+			path_list = open_node->GetPath();
 			break;
 		}
 
@@ -140,10 +170,8 @@ list<vector<char>> CAutoLayout::LayoutBFS()
 			char* new_data = nexts[i];
 			if (close_list.count(CloseNode(new_data)) == 0)
 			{
-				OpenNode* new_open_node = (OpenNode*)malloc(sizeof(OpenNode));
-				new_open_node->data = new_data;
-				new_open_node->parent = open_node;
-				open_list.push_back(new_open_node);
+				OpenNode* new_open_node = new OpenNode(new_data, open_node);
+				open_list.push(new_open_node);
 			}
 			else
 			{
@@ -154,24 +182,25 @@ list<vector<char>> CAutoLayout::LayoutBFS()
 
 	unsigned int end = GetTickCount();
 
-	printf("visited: %d\tall: %d\ttime: %d\n", open_list_pos, open_list.size(), end - begin);
+	printf("visited: %d\tall: %d\ttime: %d\n", close_list.size(), open_list.size() + close_list.size(), end - begin);
 
-	for (unsigned int i = 0; i < open_list.size(); i++)
+	while (!open_list.empty())
 	{
-		OpenNode* node = open_list[i];
-		free(node->data);
-		free(node);
+		OpenNode* node = open_list.top();
+		open_list.pop();
+		delete node;
+	}
+
+	for (unordered_map<CloseNode, OpenNode*, HashFun>::iterator it = close_list.begin(); it != close_list.end(); it++)
+	{
+		OpenNode* node = it->second;
+		delete node;
 	}
 
 	return path_list;
 }
 
-list<vector<char>> CAutoLayout::LayoutAStar()
-{
-	return list<vector<char>>();
-}
-
-int CAutoLayout::GetNextLayouts(const char* data, char* new_data_list[4])
+int CAutoLayoutAStar::GetNextLayouts(const char* data, char* new_data_list[4])
 {
 	int i, j, index;
 	for (i = 0; i<m_LayoutLen; i++)
@@ -214,7 +243,7 @@ int CAutoLayout::GetNextLayouts(const char* data, char* new_data_list[4])
 }
 
 
-void CAutoLayout::PrintLayout(const char* data)
+void CAutoLayoutAStar::PrintLayout(const char* data)
 {
 	for (int i = 0; i < m_Level; i++)
 	{
@@ -227,3 +256,4 @@ void CAutoLayout::PrintLayout(const char* data)
 	}
 	printf("\n");
 }
+
