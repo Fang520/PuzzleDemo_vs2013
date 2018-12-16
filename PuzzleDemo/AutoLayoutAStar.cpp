@@ -12,9 +12,11 @@ public:
 	OpenNode(char* layout, OpenNode* parent);
 	~OpenNode();
 	void CalcWeight();
+	void get_xy(char n, int& x1, int& y1);
 	char* data;
 	list<vector<char>> GetPath();
 	int weight;
+	int weight1;
 	OpenNode* parent;
 };
 
@@ -34,8 +36,49 @@ OpenNode::~OpenNode()
 	delete[] data;
 }
 
+void OpenNode::get_xy(char n, int& x1, int& y1)
+{
+	for (int y = 0; y < level; y++)
+	{
+		for (int x = 0; x < level; x++)
+		{
+			if (data[y * level + x] == n)
+			{
+				x1 = x;
+				y1 = y;
+				return;
+			}
+		}
+	}
+}
+
 void OpenNode::CalcWeight()
 {
+	/*
+	OpenNode* p = this;
+	int n = 0;
+	while (p)
+	{
+	p = p->parent;
+	n++;
+	}
+	weight = n;
+	*/
+	weight = 0;
+	for (int y = 0; y < level; y++)
+	{
+		for (int x = 0; x < level; x++)
+		{
+			int n = y * level + x;
+			if (data[n] != n + 1)
+			{
+				int x1, y1;
+				get_xy(n + 1, x1, y1);
+				weight += (abs(x1 - x) + abs(y1 - y));
+			}
+		}
+	}
+
 	OpenNode* p = this;
 	int n = 0;
 	while (p)
@@ -43,7 +86,7 @@ void OpenNode::CalcWeight()
 		p = p->parent;
 		n++;
 	}
-	weight = n;
+	weight1 = n;
 }
 
 list<vector<char>> OpenNode::GetPath()
@@ -65,8 +108,16 @@ struct PriorityFun
 {
 	bool operator()(OpenNode *&a, OpenNode *&b) const
 	{
-		//printf("%d\n", a->weight < b->weight);
-		return a->weight < b->weight;
+		//printf("%d %d\n", a->weight, b->weight);
+		//return true;
+		if (a->weight > b->weight)
+		{
+			return true;
+		}
+		else
+		{
+			return a->weight1 > b->weight1;
+		}
 	}
 };
 
@@ -140,8 +191,8 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 	int new_count = 0;
 	int delete_count = 0;
 	list<vector<char>> path_list;
-	//priority_queue<OpenNode*, vector<OpenNode*>, PriorityFun> open_list;
-	list<OpenNode*> open_list;
+	priority_queue<OpenNode*, vector<OpenNode*>, PriorityFun> open_list;
+	//list<OpenNode*> open_list;
 	unordered_map<CloseNode, OpenNode*, HashFun> close_list;
 
 	OpenNode::level = m_Level;
@@ -150,17 +201,17 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 
 	OpenNode* first = new OpenNode(m_OriginalLayout, NULL);
 	new_count++;
-	//open_list.push(first);
-	open_list.push_back(first);
+	open_list.push(first);
+	//open_list.push_back(first);
 
 	unsigned int begin = GetTickCount();
 
 	while (!open_list.empty())
 	{
-		//OpenNode* open_node = open_list.top();
-		OpenNode* open_node = open_list.front();
-		//open_list.pop();
-		open_list.pop_front();
+		OpenNode* open_node = open_list.top();
+		//OpenNode* open_node = open_list.front();
+		open_list.pop();
+		//open_list.pop_front();
 		if (close_list.count(CloseNode(open_node->data)) != 0)
 		{
 			delete open_node;
@@ -168,7 +219,6 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 			continue;
 		}
 		close_list[CloseNode(open_node->data)] = open_node;
-
 
 		if (memcmp(open_node->data, m_TargetLayout, m_LayoutLen) == 0)
 		{
@@ -185,8 +235,8 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 			{
 				OpenNode* new_open_node = new OpenNode(new_data, open_node);
 				new_count++;
-				//open_list.push(new_open_node);
-				open_list.push_back(new_open_node);
+				open_list.push(new_open_node);
+				//open_list.push_back(new_open_node);
 			}
 		}
 	}
@@ -197,10 +247,10 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 
 	while (!open_list.empty())
 	{
-		//OpenNode* node = open_list.top();
-		OpenNode* node = open_list.front();
-		//open_list.pop();
-		open_list.pop_front();
+		OpenNode* node = open_list.top();
+		//OpenNode* node = open_list.front();
+		open_list.pop();
+		//open_list.pop_front();
 		delete node;
 		delete_count++;
 	}
