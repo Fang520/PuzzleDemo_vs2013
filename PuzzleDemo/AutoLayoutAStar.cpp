@@ -137,8 +137,11 @@ CAutoLayoutAStar::~CAutoLayoutAStar()
 
 list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 {
+	int new_count = 0;
+	int delete_count = 0;
 	list<vector<char>> path_list;
-	priority_queue<OpenNode*, vector<OpenNode*>, PriorityFun> open_list;
+	//priority_queue<OpenNode*, vector<OpenNode*>, PriorityFun> open_list;
+	list<OpenNode*> open_list;
 	unordered_map<CloseNode, OpenNode*, HashFun> close_list;
 
 	OpenNode::level = m_Level;
@@ -146,15 +149,26 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 	close_list.rehash(218357);
 
 	OpenNode* first = new OpenNode(m_OriginalLayout, NULL);
-	open_list.push(first);
+	new_count++;
+	//open_list.push(first);
+	open_list.push_back(first);
 
 	unsigned int begin = GetTickCount();
 
 	while (!open_list.empty())
 	{
-		OpenNode* open_node = open_list.top();
+		//OpenNode* open_node = open_list.top();
+		OpenNode* open_node = open_list.front();
+		//open_list.pop();
+		open_list.pop_front();
+		if (close_list.count(CloseNode(open_node->data)) != 0)
+		{
+			delete open_node;
+			delete_count++;
+			continue;
+		}
 		close_list[CloseNode(open_node->data)] = open_node;
-		open_list.pop();
+
 
 		if (memcmp(open_node->data, m_TargetLayout, m_LayoutLen) == 0)
 		{
@@ -163,19 +177,16 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 			break;
 		}
 
-		char* nexts[4];
-		int next_count = GetNextLayouts(open_node->data, nexts);
+		int next_count = GetNextLayouts(open_node->data);
 		for (int i = 0; i < next_count; i++)
 		{
-			char* new_data = nexts[i];
+			char* new_data = m_Probe[i];
 			if (close_list.count(CloseNode(new_data)) == 0)
 			{
 				OpenNode* new_open_node = new OpenNode(new_data, open_node);
-				open_list.push(new_open_node);
-			}
-			else
-			{
-				free(new_data);
+				new_count++;
+				//open_list.push(new_open_node);
+				open_list.push_back(new_open_node);
 			}
 		}
 	}
@@ -186,21 +197,27 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 
 	while (!open_list.empty())
 	{
-		OpenNode* node = open_list.top();
-		open_list.pop();
+		//OpenNode* node = open_list.top();
+		OpenNode* node = open_list.front();
+		//open_list.pop();
+		open_list.pop_front();
 		delete node;
+		delete_count++;
 	}
 
 	for (unordered_map<CloseNode, OpenNode*, HashFun>::iterator it = close_list.begin(); it != close_list.end(); it++)
 	{
 		OpenNode* node = it->second;
 		delete node;
+		delete_count++;
 	}
+
+	printf("new=%d delete=%d\n", new_count, delete_count);
 
 	return path_list;
 }
 
-int CAutoLayoutAStar::GetNextLayouts(const char* data, char* new_data_list[4])
+int CAutoLayoutAStar::GetNextLayouts(const char* data)
 {
 	int i, j, index;
 	for (i = 0; i<m_LayoutLen; i++)
@@ -228,14 +245,13 @@ int CAutoLayoutAStar::GetNextLayouts(const char* data, char* new_data_list[4])
 		int probe_index = near_index[i];
 		if (probe_index >= 0 && probe_index < m_LayoutLen)
 		{
-			char* new_data = (char*)malloc(m_LayoutLen);
+			char* new_data = m_Probe[new_data_index];
 			for (j = 0; j<m_LayoutLen; j++)
 			{
 				new_data[j] = data[j];
 			}
 			new_data[probe_index] = data[index];
 			new_data[index] = data[probe_index];
-			new_data_list[new_data_index] = new_data;
 			new_data_index++;
 		}
 	}

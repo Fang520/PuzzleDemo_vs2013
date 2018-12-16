@@ -104,6 +104,16 @@ void CPuzzle::DrawPuzzle(CDC *pDC)
 
 void CPuzzle::GenerateRandomSequence()
 {
+	for (int i = 0; i < 9; i++)
+	{
+		m_NumberList[i] = i + 1;
+	}
+	m_NumberList[4] = 3;
+	m_NumberList[2] = 5;
+	m_NumberList[1] = 4;
+	m_NumberList[3] = 2;
+	return;
+
 	int i, n, t;
 	int len = m_Level*m_Level;
 
@@ -138,7 +148,7 @@ void CPuzzle::AutoLayout()
 	if (m_Steps.size() != 0)
 	{
 		printf("set timer\n");
-		SetTimer(0, 1000, NULL);
+		SetTimer(0, 10, NULL);
 	}
 	else
 	{
