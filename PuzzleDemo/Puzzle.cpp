@@ -104,17 +104,31 @@ void CPuzzle::DrawPuzzle(CDC *pDC)
 
 void CPuzzle::GenerateRandomSequence()
 {
-	/*
-	for (int i = 0; i < 9; i++)
+	if (m_Level == 6)
 	{
-		m_NumberList[i] = i + 1;
+		for (int i = 0; i < 25; i++)
+		{
+			m_NumberList[i] = i + 1;
+		}
+		m_NumberList[5] = 25;
+		m_NumberList[24] = 6;
+		return;
 	}
-	m_NumberList[4] = 3;
-	m_NumberList[2] = 5;
-	m_NumberList[1] = 4;
-	m_NumberList[3] = 2;
-	return;
-	*/
+
+	if (m_Level == 6)
+	{
+		for (int i = 0; i < 16; i++)
+		{
+			m_NumberList[i] = i + 1;
+		}
+		m_NumberList[4] = 6;
+		m_NumberList[5] = 5;
+		m_NumberList[10] = 16;
+		m_NumberList[15] = 11;
+		return;
+	}
+
+	
 	int i, n, t;
 	int len = m_Level*m_Level;
 
@@ -149,7 +163,7 @@ void CPuzzle::AutoLayout()
 	if (m_Steps.size() != 0)
 	{
 		printf("set timer\n");
-		SetTimer(0, 10, NULL);
+		SetTimer(0, 100, NULL);
 	}
 	else
 	{
@@ -227,7 +241,7 @@ void CPuzzle::SetLevel(int level)
 
 void CPuzzle::OnTimer(UINT_PTR nIDEvent)
 {
-	printf("on timer, size=%d\n", m_Steps.size());
+	printf("step=%d\n", m_Steps.size());
 	std::vector<char> item = m_Steps.front();
 	for (unsigned int i = 0; i < item.size(); i++)
 	{

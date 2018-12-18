@@ -86,7 +86,7 @@ void OpenNode::CalcWeight()
 		p = p->parent;
 		n++;
 	}
-	weight1 = n;
+	weight = weight * 5 + n;
 }
 
 list<vector<char>> OpenNode::GetPath()
@@ -114,10 +114,7 @@ struct PriorityFun
 		{
 			return true;
 		}
-		else
-		{
-			return a->weight1 > b->weight1;
-		}
+		return false;
 	}
 };
 
@@ -186,11 +183,72 @@ CAutoLayoutAStar::~CAutoLayoutAStar()
 	free(m_TargetLayout);
 }
 
+bool CheckValid(char s[], int n)
+{
+	int sum = 0;
+	for (int i = 0; i < n; i++)
+	{
+		if (s[i] == n)
+		{
+			continue;
+		}
+		for (int j = i + 1; j < n; j++)
+		{
+			if (s[j] == n)
+			{
+				continue;
+			}
+			if (s[i] > s[j])
+			{
+				sum++;
+			}
+		}
+	}
+	if (n != 16)
+	{
+		if (sum % 2 == 0)
+		{
+			return true;
+		}
+		return false;
+	}
+	else
+	{
+		int i;
+		for (i = 0; i < n; i++)
+		{
+			if (s[i] == n)
+			{
+				break;
+			}
+		}
+		int line = i / 4 + 1;
+		printf("i=%d line=%d sum=%d\n", i, line, sum);
+		return ((4 - line) % 2) == (sum % 2);
+	}
+}
+
 list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 {
+
+
 	int new_count = 0;
 	int delete_count = 0;
 	list<vector<char>> path_list;
+
+	
+	if (CheckValid(m_OriginalLayout, m_LayoutLen))
+	{
+		//printf("=====ok\n");
+		//return	path_list;
+	}
+	else
+	{
+		printf("no solution\n");
+		return	path_list;
+	}
+	
+
 	priority_queue<OpenNode*, vector<OpenNode*>, PriorityFun> open_list;
 	//list<OpenNode*> open_list;
 	unordered_map<CloseNode, OpenNode*, HashFun> close_list;
