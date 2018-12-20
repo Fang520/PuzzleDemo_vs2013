@@ -9,24 +9,23 @@ class OpenNode
 {
 public:
 	static int level;
-	OpenNode(char* layout, OpenNode* parent);
+	OpenNode(char* layout, OpenNode* parent, int len);
 	~OpenNode();
 	void CalcWeight();
-	void get_xy(char n, int& x1, int& y1);
 	char* data;
 	list<vector<char>> GetPath();
 	int weight;
-	int weight1;
+	int len;
 	OpenNode* parent;
 };
 
 int OpenNode::level = 0;
 
-OpenNode::OpenNode(char* layout, OpenNode* parent)
+OpenNode::OpenNode(char* layout, OpenNode* parent, int len)
 {
-	int len = level * level;
-	data = new char[len];
-	memcpy(data, layout, len);
+	data = new char[level * level];
+	memcpy(data, layout, level * level);
+	this->len = len;
 	this->parent = parent;
 	CalcWeight();
 }
@@ -36,57 +35,27 @@ OpenNode::~OpenNode()
 	delete[] data;
 }
 
-void OpenNode::get_xy(char n, int& x1, int& y1)
-{
-	for (int y = 0; y < level; y++)
-	{
-		for (int x = 0; x < level; x++)
-		{
-			if (data[y * level + x] == n)
-			{
-				x1 = x;
-				y1 = y;
-				return;
-			}
-		}
-	}
-}
-
 void OpenNode::CalcWeight()
 {
-	/*
-	OpenNode* p = this;
-	int n = 0;
-	while (p)
+	int i, j, d;
+	d = 0;
+	for (i = 0; i < level * level; i++)
 	{
-	p = p->parent;
-	n++;
-	}
-	weight = n;
-	*/
-	weight = 0;
-	for (int y = 0; y < level; y++)
-	{
-		for (int x = 0; x < level; x++)
+		int x, y, x1, y1;
+		x = i % level;
+		y = i / level;
+		for (j = 0; j < level *level; j++)
 		{
-			int n = y * level + x;
-			if (data[n] != n + 1)
+			if (data[j] == i + 1)
 			{
-				int x1, y1;
-				get_xy(n + 1, x1, y1);
-				weight += (abs(x1 - x) + abs(y1 - y));
+				break;
 			}
 		}
+		x1 = j % level;
+		y1 = j / level;
+		d += (abs(x1 - x) + abs(y1 - y));
 	}
-
-	OpenNode* p = this;
-	int n = 0;
-	while (p)
-	{
-		p = p->parent;
-		n++;
-	}
-	weight = weight * 5 + n;
+	weight = d * 5 + len;
 }
 
 list<vector<char>> OpenNode::GetPath()
@@ -108,13 +77,7 @@ struct PriorityFun
 {
 	bool operator()(OpenNode *&a, OpenNode *&b) const
 	{
-		//printf("%d %d\n", a->weight, b->weight);
-		//return true;
-		if (a->weight > b->weight)
-		{
-			return true;
-		}
-		return false;
+		return a->weight > b->weight;
 	}
 };
 
@@ -235,41 +198,30 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 	int new_count = 0;
 	int delete_count = 0;
 	list<vector<char>> path_list;
-
 	
-	if (CheckValid(m_OriginalLayout, m_LayoutLen))
-	{
-		//printf("=====ok\n");
-		//return	path_list;
-	}
-	else
+	if (!CheckValid(m_OriginalLayout, m_LayoutLen))
 	{
 		printf("no solution\n");
 		return	path_list;
 	}
-	
 
 	priority_queue<OpenNode*, vector<OpenNode*>, PriorityFun> open_list;
-	//list<OpenNode*> open_list;
 	unordered_map<CloseNode, OpenNode*, HashFun> close_list;
 
 	OpenNode::level = m_Level;
 	CloseNode::data_len = m_LayoutLen;
 	close_list.rehash(218357);
 
-	OpenNode* first = new OpenNode(m_OriginalLayout, NULL);
+	OpenNode* first = new OpenNode(m_OriginalLayout, NULL, 0);
 	new_count++;
 	open_list.push(first);
-	//open_list.push_back(first);
 
 	unsigned int begin = GetTickCount();
 
 	while (!open_list.empty())
 	{
 		OpenNode* open_node = open_list.top();
-		//OpenNode* open_node = open_list.front();
 		open_list.pop();
-		//open_list.pop_front();
 		if (close_list.count(CloseNode(open_node->data)) != 0)
 		{
 			delete open_node;
@@ -291,10 +243,9 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 			char* new_data = m_Probe[i];
 			if (close_list.count(CloseNode(new_data)) == 0)
 			{
-				OpenNode* new_open_node = new OpenNode(new_data, open_node);
+				OpenNode* new_open_node = new OpenNode(new_data, open_node, open_node->len + 1);
 				new_count++;
 				open_list.push(new_open_node);
-				//open_list.push_back(new_open_node);
 			}
 		}
 	}
@@ -306,9 +257,7 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 	while (!open_list.empty())
 	{
 		OpenNode* node = open_list.top();
-		//OpenNode* node = open_list.front();
 		open_list.pop();
-		//open_list.pop_front();
 		delete node;
 		delete_count++;
 	}
@@ -365,19 +314,3 @@ int CAutoLayoutAStar::GetNextLayouts(const char* data)
 	}
 	return new_data_index;
 }
-
-
-void CAutoLayoutAStar::PrintLayout(const char* data)
-{
-	for (int i = 0; i < m_Level; i++)
-	{
-		printf("    ");
-		for (int j = 0; j < m_Level; j++)
-		{
-			printf("%d ", data[i * m_Level + j]);
-		}
-		printf("\n");
-	}
-	printf("\n");
-}
-

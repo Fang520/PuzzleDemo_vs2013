@@ -11,7 +11,6 @@ public:
 	virtual ~CAutoLayoutAStar();
 private:
 	int GetNextLayouts(const char* data);
-	void PrintLayout(const char* data);
 	char* m_OriginalLayout;
 	char* m_TargetLayout;
 	int m_LayoutLen;
