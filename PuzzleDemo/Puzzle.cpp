@@ -16,17 +16,6 @@ CPuzzle::CPuzzle()
 	srand((unsigned int)time(NULL));
 	SetLevel(3);
 	GenerateRandomSequence();
-	/*
-	m_NumberList[0] = 2;
-	m_NumberList[1] = 1;
-	m_NumberList[2] = 3;
-	m_NumberList[3] = 4;
-	m_NumberList[4] = 6;
-	m_NumberList[5] = 5;
-	m_NumberList[6] = 7;
-	m_NumberList[7] = 9;
-	m_NumberList[8] = 8;
-	*/
 }
 
 CPuzzle::~CPuzzle()
@@ -38,20 +27,13 @@ CPuzzle::~CPuzzle()
 	}
 }
 
-
 BEGIN_MESSAGE_MAP(CPuzzle, CWnd)
 	ON_WM_PAINT()
 	ON_WM_LBUTTONDOWN()
 	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
-
-
 // CPuzzle message handlers
-
-
-
-
 void CPuzzle::OnPaint()
 {
 	CPaintDC dc(this); // device context for painting
@@ -59,7 +41,6 @@ void CPuzzle::OnPaint()
 	// Do not call CWnd::OnPaint() for painting messages
 	DrawPuzzle(&dc);
 }
-
 
 void CPuzzle::OnLButtonDown(UINT nFlags, CPoint point)
 {
@@ -104,31 +85,6 @@ void CPuzzle::DrawPuzzle(CDC *pDC)
 
 void CPuzzle::GenerateRandomSequence()
 {
-	if (m_Level == 6)
-	{
-		for (int i = 0; i < 25; i++)
-		{
-			m_NumberList[i] = i + 1;
-		}
-		m_NumberList[5] = 25;
-		m_NumberList[24] = 6;
-		return;
-	}
-
-	if (m_Level == 6)
-	{
-		for (int i = 0; i < 16; i++)
-		{
-			m_NumberList[i] = i + 1;
-		}
-		m_NumberList[4] = 6;
-		m_NumberList[5] = 5;
-		m_NumberList[10] = 16;
-		m_NumberList[15] = 11;
-		return;
-	}
-
-	
 	int i, n, t;
 	int len = m_Level*m_Level;
 

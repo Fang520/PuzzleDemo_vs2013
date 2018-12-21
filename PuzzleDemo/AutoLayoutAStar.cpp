@@ -1,23 +1,7 @@
 #include "stdafx.h"
-#include "AutoLayoutAStar.h"
 #include <unordered_map>
 #include <queue>
-
-using namespace std;
-
-class OpenNode
-{
-public:
-	static int level;
-	OpenNode(char* layout, OpenNode* parent, int len);
-	~OpenNode();
-	void CalcWeight();
-	char* data;
-	list<vector<char>> GetPath();
-	int weight;
-	int len;
-	OpenNode* parent;
-};
+#include "AutoLayoutAStar.h"
 
 int OpenNode::level = 0;
 
@@ -81,17 +65,6 @@ struct PriorityFun
 	}
 };
 
-class CloseNode
-{
-public:
-	static int data_len;
-	CloseNode(const char* data);
-	bool operator==(const CloseNode& other) const;
-	size_t hash() const;
-private:
-	const char* data;
-};
-
 int CloseNode::data_len = 0;
 
 CloseNode::CloseNode(const char* data)
@@ -146,9 +119,11 @@ CAutoLayoutAStar::~CAutoLayoutAStar()
 	free(m_TargetLayout);
 }
 
-bool CheckValid(char s[], int n)
+bool CAutoLayoutAStar::CanSolved()
 {
 	int sum = 0;
+	int n = m_LayoutLen;
+	char* s = m_OriginalLayout;
 	for (int i = 0; i < n; i++)
 	{
 		if (s[i] == n)
@@ -167,15 +142,8 @@ bool CheckValid(char s[], int n)
 			}
 		}
 	}
-	if (n != 16)
-	{
-		if (sum % 2 == 0)
-		{
-			return true;
-		}
-		return false;
-	}
-	else
+
+	if (m_Level % 2 == 0)
 	{
 		int i;
 		for (i = 0; i < n; i++)
@@ -185,21 +153,22 @@ bool CheckValid(char s[], int n)
 				break;
 			}
 		}
-		int line = i / 4 + 1;
-		printf("i=%d line=%d sum=%d\n", i, line, sum);
-		return ((4 - line) % 2) == (sum % 2);
+		int line = i / m_Level + 1;
+		return ((m_Level - line) % 2) == (sum % 2);
+	}
+	else
+	{
+		return (sum % 2 == 0);
 	}
 }
 
 list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 {
-
-
 	int new_count = 0;
 	int delete_count = 0;
 	list<vector<char>> path_list;
 	
-	if (!CheckValid(m_OriginalLayout, m_LayoutLen))
+	if (!CanSolved())
 	{
 		printf("no solution\n");
 		return	path_list;
@@ -268,6 +237,7 @@ list<vector<char>> CAutoLayoutAStar::LayoutBFS()
 		delete node;
 		delete_count++;
 	}
+	close_list.clear();
 
 	printf("new=%d delete=%d\n", new_count, delete_count);
 
